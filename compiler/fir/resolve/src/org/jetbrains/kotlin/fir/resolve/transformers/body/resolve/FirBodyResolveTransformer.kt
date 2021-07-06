@@ -47,7 +47,7 @@ open class FirBodyResolveTransformer(
     internal open val expressionsTransformer = FirExpressionsResolveTransformer(this)
     protected open val declarationsTransformer = FirDeclarationsResolveTransformer(this)
     private val controlFlowStatementsTransformer = FirControlFlowStatementsResolveTransformer(this)
-    private val classDeclarations = mutableListOf<FirRegularClass>()
+    private val classDeclarationsStack = ArrayDeque<FirRegularClass>()
 
     override fun transformFile(file: FirFile, data: ResolutionMode): FirFile {
         checkSessionConsistency(file)
@@ -70,7 +70,13 @@ open class FirBodyResolveTransformer(
             typeRef
         } else {
             typeResolverTransformer.withFile(context.file) {
-                transformTypeRef(typeRef, ScopeClassDeclaration(FirCompositeScope(components.createCurrentScopeList()), classDeclarations))
+                transformTypeRef(
+                    typeRef,
+                    ScopeClassDeclaration(
+                        FirCompositeScope(components.createCurrentScopeList()),
+                        classDeclarationsStack.lastOrNull()
+                    )
+                )
             }
         }
         return resolvedTypeRef.transformAnnotations(this, data)
@@ -263,9 +269,9 @@ open class FirBodyResolveTransformer(
     }
 
     override fun transformRegularClass(regularClass: FirRegularClass, data: ResolutionMode): FirStatement {
-        classDeclarations.add(regularClass)
+        classDeclarationsStack.add(regularClass)
         val result = declarationsTransformer.transformRegularClass(regularClass, data)
-        classDeclarations.removeAt(classDeclarations.lastIndex)
+        classDeclarationsStack.removeLast()
         return result
     }
 

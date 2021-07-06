@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.impl.FirOuterClassTypeParameterRef
 import org.jetbrains.kotlin.fir.declarations.utils.expandedConeType
+import org.jetbrains.kotlin.fir.declarations.utils.isInner
 import org.jetbrains.kotlin.fir.diagnostics.ConeDiagnostic
 import org.jetbrains.kotlin.fir.diagnostics.ConeSimpleDiagnostic
 import org.jetbrains.kotlin.fir.diagnostics.ConeStubDiagnostic
@@ -450,7 +451,7 @@ fun FirFunction.getAsForbiddenNamedArgumentsTarget(session: FirSession): Forbidd
 //  org.jetbrains.kotlin.fir.serialization.FirElementSerializer.constructorProto
 fun FirFunction.getHasStableParameterNames(session: FirSession): Boolean = getAsForbiddenNamedArgumentsTarget(session) == null
 
-fun isValidTypeParameter(typeParameter: FirTypeParameterRef, classDeclaration: FirRegularClass?, session: FirSession): Boolean {
+fun isValidTypeParameterFromOuterClass(typeParameter: FirTypeParameterRef, classDeclaration: FirRegularClass?, session: FirSession): Boolean {
     if (typeParameter !is FirOuterClassTypeParameterRef || classDeclaration == null) {
         return true
     }
@@ -472,6 +473,33 @@ fun isValidTypeParameter(typeParameter: FirTypeParameterRef, classDeclaration: F
     }
 
     return containsTypeParameter(classDeclaration)
+}
+
+fun getOuterClassAndActualTypeParametersCount(klass: FirRegularClass, session: FirSession): Pair<FirRegularClass?, Int> {
+    var result = klass.typeParameters.size
+
+    if (!klass.isInner) {
+        return Pair(null, result)
+    }
+
+    val outerClass = getOuterClass(klass, session)
+    if (outerClass != null) {
+        result -= outerClass.typeParameters.size
+    }
+
+    return Pair(outerClass, result)
+}
+
+fun getOuterClass(klass: FirRegularClass, session: FirSession): FirRegularClass? {
+    val classId = klass.symbol.classId
+    val parentId = classId.relativeClassName.parent()
+    if (!parentId.isRoot) {
+        val outerClassId = ClassId(classId.packageFqName, parentId, false)
+        val parentSymbol = session.symbolProvider.getClassLikeSymbolByFqName(outerClassId)
+        return (parentSymbol as? FirRegularClassSymbol)?.fir
+    }
+
+    return null
 }
 
 fun getClassThatContainsTypeParameter(klass: FirRegularClass, typeParameter: FirTypeParameterRef): FirRegularClass? {

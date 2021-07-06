@@ -444,7 +444,7 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
         val TYPE_ARGUMENTS_NOT_ALLOWED by error<PsiElement>()
         val WRONG_NUMBER_OF_TYPE_ARGUMENTS by error<PsiElement> {
             parameter<Int>("expectedCount")
-            parameter<FirClassLikeSymbol<*>>("classifier")
+            parameter<FirRegularClass>("classifier")
         }
         val NO_TYPE_ARGUMENTS_ON_RHS by error<PsiElement> {
             parameter<Int>("expectedCount")

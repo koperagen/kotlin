@@ -15,7 +15,7 @@ import org.jetbrains.kotlin.fir.declarations.FirRegularClass
 import org.jetbrains.kotlin.fir.declarations.FirTypeParameterRef
 import org.jetbrains.kotlin.fir.declarations.FirTypedDeclaration
 import org.jetbrains.kotlin.fir.resolve.getClassThatContainsTypeParameter
-import org.jetbrains.kotlin.fir.resolve.isValidTypeParameter
+import org.jetbrains.kotlin.fir.resolve.isValidTypeParameterFromOuterClass
 import org.jetbrains.kotlin.fir.resolve.toSymbol
 import org.jetbrains.kotlin.fir.resolve.toTypeProjections
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
@@ -25,12 +25,6 @@ object FirOuterClassArgumentsRequiredChecker : FirRegularClassChecker() {
     override fun check(declaration: FirRegularClass, context: CheckerContext, reporter: DiagnosticReporter) {
         for (superTypeRef in declaration.superTypeRefs) {
             checkOuterClassArgumentsRequired(superTypeRef, declaration, context, reporter)
-        }
-
-        for (subDecl in declaration.declarations) {
-            if (subDecl is FirTypedDeclaration) {
-                checkOuterClassArgumentsRequired(subDecl.returnTypeRef, declaration, context, reporter)
-            }
         }
     }
 }
@@ -52,7 +46,6 @@ private fun checkOuterClassArgumentsRequired(
         val delegatedTypeRef = typeRef.delegatedTypeRef
 
         if (delegatedTypeRef is FirUserTypeRef) {
-
             if (type is ConeClassLikeType) {
                 val symbol = type.lookupTag.toSymbol(context.session)
 
@@ -60,7 +53,7 @@ private fun checkOuterClassArgumentsRequired(
                     var problemTypeParameter: FirTypeParameterRef? = null
                     val typeArguments = delegatedTypeRef.qualifier.toTypeProjections()
                     val argumentsFromOuterClassesAndParentsCount = symbol.fir.typeParameters.drop(typeArguments.size).sumOf {
-                        val result = if (isValidTypeParameter(it, declaration, context.session)) {
+                        val result = if (isValidTypeParameterFromOuterClass(it, declaration, context.session)) {
                             1
                         } else {
                             if (problemTypeParameter == null) {
@@ -84,13 +77,13 @@ private fun checkOuterClassArgumentsRequired(
                                 reporter.reportOn(source, FirErrors.OUTER_CLASS_ARGUMENTS_REQUIRED, outerClass!!, context)
                             }
                         } else {
-                            reporter.reportOn(
+                            /*reporter.reportOn(
                                 source,
                                 FirErrors.WRONG_NUMBER_OF_TYPE_ARGUMENTS,
                                 symbol.fir.typeParameters.size - argumentsFromOuterClassesAndParentsCount,
                                 symbol,
                                 context
-                            )
+                            )*/
                         }
                     }
                 }

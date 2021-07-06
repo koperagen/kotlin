@@ -6,12 +6,10 @@
 package org.jetbrains.kotlin.fir.resolve.providers.impl
 
 import org.jetbrains.kotlin.builtins.StandardNames
-import org.jetbrains.kotlin.fir.FirSession
-import org.jetbrains.kotlin.fir.ThreadSafeMutableState
-import org.jetbrains.kotlin.fir.declarations.FirRegularClass
-import org.jetbrains.kotlin.fir.declarations.FirTypeParameterRef
+import org.jetbrains.kotlin.fir.*
+import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.declarations.utils.classId
 import org.jetbrains.kotlin.fir.diagnostics.ConeUnexpectedTypeArgumentsError
-import org.jetbrains.kotlin.fir.render
 import org.jetbrains.kotlin.fir.resolve.*
 import org.jetbrains.kotlin.fir.resolve.diagnostics.ConeOuterClassArgumentsRequired
 import org.jetbrains.kotlin.fir.resolve.diagnostics.ConeUnresolvedQualifierError
@@ -111,63 +109,157 @@ class FirTypeResolverImpl(private val session: FirSession) : FirTypeResolver() {
                 }
             }
         }
-        var typeArguments = typeRef.qualifier.toTypeProjections()
-        if (symbol is FirRegularClassSymbol) {
-            val isPossibleBareType = areBareTypesAllowed && typeArguments.isEmpty()
-            if (typeArguments.size != symbol.fir.typeParameters.size && !isPossibleBareType) {
-                @Suppress("NAME_SHADOWING")
-                if (symbol.fir.typeParameters.size < typeArguments.size) {
-                    return ConeClassErrorType(ConeWrongNumberOfTypeArgumentsError(symbol.fir.typeParameters.size, symbol))
-                } else {
-                    val substitutor = substitutor ?: ConeSubstitutor.Empty
-                    var problemTypeParameter: FirTypeParameterRef? = null
-                    val classDeclarations = scopeClassDeclaration.classDeclarations
-                    val argumentsFromOuterClassesAndParents = symbol.fir.typeParameters.drop(typeArguments.size).mapNotNull {
-                        if (isValidTypeParameter(it, classDeclarations.lastOrNull(), session)) {
-                            val type = ConeTypeParameterTypeImpl(ConeTypeParameterLookupTag(it.symbol), isNullable = false)
-                            // we should report ConeSimpleDiagnostic(..., WrongNumberOfTypeArguments)
-                            // but genericArgumentNumberMismatch.kt test fails with
-                            // index out of bounds exception for start offset of
-                            // the source
-                            substitutor.substituteOrNull(type)
-                        } else {
-                            if (problemTypeParameter == null) {
-                                problemTypeParameter = it
-                            }
-                            null
-                        }
-                    }.toTypedArray<ConeTypeProjection>()
-                    typeArguments += argumentsFromOuterClassesAndParents
 
-                    if (typeArguments.size != symbol.fir.typeParameters.size) {
-                        if (problemTypeParameter != null) {
-                            var outerClass: FirRegularClass? = null
-                            classDeclarations.forEach {
-                                getClassThatContainsTypeParameter(it, problemTypeParameter!!)?.let { result ->
-                                    outerClass = result
-                                    return@forEach
-                                }
-                            }
-                            return ConeClassErrorType(ConeOuterClassArgumentsRequired(outerClass!!))
-                        } else {
+        val allTypeArguments = mutableListOf<ConeTypeProjection>()
+        var typeArgumentsCount = 0
+
+        val qualifier = typeRef.qualifier
+        for (qualifierIndex in qualifier.size - 1 downTo 0) {
+            val qualifierTypeArguments = qualifier[qualifierIndex].typeArgumentList.typeArguments
+
+            for (qualifierTypeArgument in qualifierTypeArguments) {
+                allTypeArguments.add(qualifierTypeArgument.toConeTypeProjection())
+                typeArgumentsCount++
+            }
+        }
+
+        if (symbol is FirRegularClassSymbol) {
+            val isPossibleBareType = areBareTypesAllowed && allTypeArguments.isEmpty()
+            if (!isPossibleBareType) {
+                val actualSubstitutor = substitutor ?: ConeSubstitutor.Empty
+                val topDeclaration = scopeClassDeclaration.topDeclaration
+                val typeParameters = symbol.fir.typeParameters
+
+                val (typeParametersAlignedToQualifierParts, outerClasses) = getClassesAlignedToQualifierParts(symbol, qualifier, session)
+
+                fun createDiagnosticsIfExists(
+                    parameterClass: FirRegularClass?,
+                    qualifierPartIndex: Int,
+                    qualifierPartArgumentsCount: Int? = null,
+                    ignoreOuterClassCheck: Boolean = false
+                ): ConeClassErrorType? {
+                    if (parameterClass == null) {
+                        return null // TODO: Type arguments not allowed
+                    }
+
+                    val (outerClass, actualTypeParametersCount) = getOuterClassAndActualTypeParametersCount(parameterClass, session)
+
+                    if (qualifierPartArgumentsCount == null || actualTypeParametersCount != qualifierPartArgumentsCount) {
+                        // TODO: fix obtaining outer class for cases like
+                        //  https://github.com/JetBrains/kotlin/blob/master/compiler/testData/diagnostics/tests/generics/innerClasses/implicitArguments/fromSuperClassesLocal.kt#L16
+                        if (ignoreOuterClassCheck || parameterClass.classId.relativeClassName.parent().isRoot || outerClass != null) {
                             return ConeClassErrorType(
                                 ConeWrongNumberOfTypeArgumentsError(
-                                    desiredCount = symbol.fir.typeParameters.size - argumentsFromOuterClassesAndParents.size,
-                                    type = symbol
+                                    actualTypeParametersCount,
+                                    symbol,
+                                    parameterClass,
+                                    getTypeArgumentsOrNameSource(typeRef, qualifierPartIndex)
                                 )
                             )
+                        }
+                    }
+
+                    return null
+                }
+
+                for ((index, typeParameter) in typeParameters.withIndex()) {
+                    val (parameterClass, qualifierPartIndex) = typeParametersAlignedToQualifierParts[typeParameter.symbol] ?: continue
+
+                    if (index < typeArgumentsCount) {
+                        // Check if type argument matches type parameter in respective qualifier part
+                        val qualifierPartArgumentsCount = qualifier[qualifierPartIndex].typeArgumentList.typeArguments.size
+                        createDiagnosticsIfExists(
+                            parameterClass,
+                            qualifierPartIndex,
+                            qualifierPartArgumentsCount
+                        )?.let { return it }
+                        continue
+                    }
+
+                    if (isValidTypeParameterFromOuterClass(typeParameter, topDeclaration, session)) {
+                        val type = ConeTypeParameterTypeImpl(ConeTypeParameterLookupTag(typeParameter.symbol), isNullable = false)
+                        val substituted = actualSubstitutor.substituteOrNull(type)
+                        if (substituted == null) {
+                            createDiagnosticsIfExists(parameterClass, qualifierPartIndex)?.let { return it }
+                        } else {
+                            allTypeArguments.add(substituted)
+                        }
+                    } else {
+                        return ConeClassErrorType(ConeOuterClassArgumentsRequired(parameterClass))
+                    }
+                }
+
+                // Check rest type arguments
+                if (typeArgumentsCount > typeParameters.size) {
+                    for (index in qualifier.indices) {
+                        if (qualifier[index].typeArgumentList.typeArguments.isNotEmpty()) {
+                            val parameterClass = outerClasses.elementAtOrNull(index)
+                            createDiagnosticsIfExists(parameterClass, index, ignoreOuterClassCheck = true)?.let { return it }
                         }
                     }
                 }
             }
         }
-        return symbol.constructType(typeArguments, typeRef.isMarkedNullable, typeRef.annotations.computeTypeAttributes())
+
+        return symbol.constructType(allTypeArguments.toTypedArray(), typeRef.isMarkedNullable, typeRef.annotations.computeTypeAttributes())
             .also {
                 val lookupTag = it.lookupTag
                 if (lookupTag is ConeClassLikeLookupTagImpl && symbol is FirClassLikeSymbol<*>) {
                     lookupTag.bindSymbolToLookupTag(session, symbol)
                 }
             }
+    }
+
+    private fun getClassesAlignedToQualifierParts(
+        symbol: FirRegularClassSymbol,
+        qualifier: List<FirQualifierPart>,
+        session: FirSession
+    ): Pair<Map<FirTypeParameterSymbol, Pair<FirRegularClass, Int>>, List<FirRegularClass?>> {
+        var currentClass: FirRegularClass? = null
+        val outerClasses = mutableListOf<FirRegularClass?>()
+
+        // Try get at least qualifier.size classes that match qualifier parts
+        var qualifierPartIndex = 0
+        while (qualifierPartIndex < qualifier.size || currentClass != null) {
+            if (qualifierPartIndex == 0) {
+                currentClass = symbol.fir
+            } else {
+                if (currentClass != null) {
+                    currentClass = getOuterClass(currentClass, session)
+                }
+            }
+
+            outerClasses.add(currentClass)
+            qualifierPartIndex++
+        }
+
+        val outerArgumentsCount = outerClasses.size - qualifier.size
+        val reversedOuterClasses = outerClasses.asReversed()
+        val result = mutableMapOf<FirTypeParameterSymbol, Pair<FirRegularClass, Int>>()
+
+        for (index in reversedOuterClasses.indices) {
+            currentClass = reversedOuterClasses[index]
+            if (currentClass != null) {
+                for (typeParameter in currentClass.typeParameters) {
+                    val typeParameterSymbol = typeParameter.symbol
+                    if (!result.containsKey(typeParameterSymbol)) {
+                        result[typeParameterSymbol] = Pair(currentClass, index - outerArgumentsCount)
+                    }
+                }
+            }
+        }
+
+        return Pair(result, reversedOuterClasses.drop(outerArgumentsCount))
+    }
+
+    private fun getTypeArgumentsOrNameSource(typeRef: FirUserTypeRef, qualifierIndex: Int?): FirSourceElement? {
+        val qualifierPart = if (qualifierIndex != null) typeRef.qualifier.elementAtOrNull(qualifierIndex) else null
+        val typeArgumentsList = qualifierPart?.typeArgumentList
+        return if (typeArgumentsList == null || typeArgumentsList.typeArguments.isEmpty()) {
+            qualifierPart?.source ?: typeRef.source
+        } else {
+            typeArgumentsList.source
+        }
     }
 
     private fun createFunctionalType(typeRef: FirFunctionTypeRef): ConeClassLikeType {

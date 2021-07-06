@@ -1514,7 +1514,7 @@ internal class TypeArgumentsNotAllowedImpl(
 
 internal class WrongNumberOfTypeArgumentsImpl(
     override val expectedCount: Int,
-    override val classifier: KtClassLikeSymbol,
+    override val classifier: KtNamedClassOrObjectSymbol,
     firDiagnostic: FirPsiDiagnostic,
     override val token: ValidityToken,
 ) : KtFirDiagnostic.WrongNumberOfTypeArguments(), KtAbstractFirDiagnostic<PsiElement> {
