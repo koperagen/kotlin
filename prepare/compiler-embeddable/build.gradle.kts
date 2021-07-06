@@ -26,8 +26,8 @@ dependencies {
     runtimeOnly(project(":kotlin-reflect"))
     runtimeOnly(project(":kotlin-daemon-embeddable"))
     runtimeOnly(commonDep("org.jetbrains.intellij.deps", "trove4j"))
-    testCompile(commonDep("junit:junit"))
-    testCompile(project(":kotlin-test:kotlin-test-junit"))
+    testApi(commonDep("junit:junit"))
+    testApi(project(":kotlin-test:kotlin-test-junit"))
     testCompilationClasspath(kotlinStdlib())
 }
 

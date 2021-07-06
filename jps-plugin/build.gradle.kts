@@ -23,20 +23,20 @@ dependencies {
     }
     compileOnly(jpsStandalone()) { includeJars("jps-builders", "jps-builders-6") }
     testCompileOnly(project(":kotlin-reflect-api"))
-    testCompile(project(":compiler:incremental-compilation-impl"))
-    testCompile(projectTests(":compiler:tests-common"))
-    testCompile(projectTests(":compiler:incremental-compilation-impl"))
-    testCompile(commonDep("junit:junit"))
-    testCompile(project(":kotlin-test:kotlin-test-jvm"))
-    testCompile(projectTests(":kotlin-build-common"))
+    testApi(project(":compiler:incremental-compilation-impl"))
+    testApi(projectTests(":compiler:tests-common"))
+    testApi(projectTests(":compiler:incremental-compilation-impl"))
+    testApi(commonDep("junit:junit"))
+    testApi(project(":kotlin-test:kotlin-test-jvm"))
+    testApi(projectTests(":kotlin-build-common"))
     testCompileOnly(jpsStandalone()) { includeJars("jps-builders", "jps-builders-6") }
     Ide.IJ {
-        testCompile(intellijDep("devkit"))
+        testApi(intellijDep("devkit"))
     }
 
-    testCompile(intellijDep())
+    testApi(intellijDep())
 
-    testCompile(jpsBuildTest())
+    testApi(jpsBuildTest())
     compilerModules.forEach {
         testRuntime(project(it))
     }

@@ -23,7 +23,7 @@ android {
 }
 
 dependencies {
-    compile project(':project2')
+    api project(':project2')
     customCompile project(':project2')
-    testCompile(project(':project2').sourceSets.test.output)
+    testApi(project(':project2').sourceSets.test.output)
 }

@@ -19,13 +19,13 @@ dependencies {
     excludeInAndroidStudio(rootProject) { compileOnly(intellijPluginDep("maven")) }
     compileOnly(intellijPluginDep("gradle"))
 
-    testCompile(toolsJar())
-    testCompile(projectTests(":idea"))
-    testCompile(projectTests(":compiler:tests-common"))
-    testCompile(projectTests(":idea:idea-test-framework"))
-    testCompile(project(":kotlin-test:kotlin-test-junit"))
-    testCompile(commonDep("junit:junit"))
-    testCompile(projectTests(":idea:idea-frontend-independent"))
+    testApi(toolsJar())
+    testApi(projectTests(":idea"))
+    testApi(projectTests(":compiler:tests-common"))
+    testApi(projectTests(":idea:idea-test-framework"))
+    testApi(project(":kotlin-test:kotlin-test-junit"))
+    testApi(commonDep("junit:junit"))
+    testApi(projectTests(":idea:idea-frontend-independent"))
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0")
 
@@ -36,8 +36,8 @@ dependencies {
     testRuntime(project(":sam-with-receiver-ide-plugin"))
     testRuntime(project(":noarg-ide-plugin"))
     testRuntime(project(":plugins:lombok:lombok-ide-plugin"))
-    testCompile(intellijDep())
-    testCompile(intellijPluginDep("java"))
+    testApi(intellijDep())
+    testApi(intellijPluginDep("java"))
 }
 
 sourceSets {

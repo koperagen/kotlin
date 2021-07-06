@@ -6,67 +6,67 @@ plugins {
 }
 
 dependencies {
-    testRuntime(intellijDep())
+    testImplementation(intellijDep())
 
-    compile(kotlinStdlib())
-    compile(project(":idea:idea-core"))
-    compile(project(":compiler:frontend"))
-    compile(project(":compiler:frontend.java"))
-    compile(project(":compiler:light-classes"))
-    compile(project(":compiler:util"))
+    api(kotlinStdlib())
+    api(project(":idea:idea-core"))
+    api(project(":compiler:frontend"))
+    api(project(":compiler:frontend.java"))
+    api(project(":compiler:light-classes"))
+    api(project(":compiler:util"))
     compileOnly(intellijCoreDep()) { includeJars("intellij-core") }
 
-    testCompile(project(":idea"))
-    testCompile(projectTests(":idea:idea-test-framework"))
-    testCompile(project(":compiler:light-classes"))
-    testCompile(project(":kotlin-test:kotlin-test-junit"))
-    testCompile(commonDep("junit:junit"))
+    testApi(project(":idea"))
+    testApi(projectTests(":idea:idea-test-framework"))
+    testApi(project(":compiler:light-classes"))
+    testApi(project(":kotlin-test:kotlin-test-junit"))
+    testApi(commonDep("junit:junit"))
 
     testCompileOnly(intellijDep())
 
     testCompileOnly(intellijPluginDep("java"))
     testRuntimeOnly(intellijPluginDep("java"))
 
-    testCompile(project(":idea:idea-native")) { isTransitive = false }
-    testCompile(project(":idea:idea-gradle-native")) { isTransitive = false }
+    testApi(project(":idea:idea-native")) { isTransitive = false }
+    testApi(project(":idea:idea-gradle-native")) { isTransitive = false }
 
     testRuntimeOnly(toolsJar())
-    testRuntime(project(":native:frontend.native"))
-    testRuntime(project(":plugins:kapt3-idea")) { isTransitive = false }
-    testRuntime(project(":idea:idea-jvm"))
-    testRuntime(project(":idea:idea-android"))
-    testRuntime(project(":plugins:android-extensions-ide"))
-    testRuntime(project(":sam-with-receiver-ide-plugin"))
-    testRuntime(project(":allopen-ide-plugin"))
-    testRuntime(project(":noarg-ide-plugin"))
-    testRuntime(project(":kotlin-reflect"))
-    testRuntime(project(":kotlin-scripting-idea"))
-    testRuntime(project(":kotlinx-serialization-ide-plugin"))
-    testRuntime(project(":plugins:parcelize:parcelize-ide"))
-    testRuntime(project(":plugins:lombok:lombok-ide-plugin"))
-    testRuntime(intellijPluginDep("properties"))
-    testRuntime(intellijPluginDep("gradle"))
-    testRuntime(intellijPluginDep("Groovy"))
-    testRuntime(intellijPluginDep("coverage"))
+    testImplementation(project(":native:frontend.native"))
+    testImplementation(project(":plugins:kapt3-idea")) { isTransitive = false }
+    testImplementation(project(":idea:idea-jvm"))
+    testImplementation(project(":idea:idea-android"))
+    testImplementation(project(":plugins:android-extensions-ide"))
+    testImplementation(project(":sam-with-receiver-ide-plugin"))
+    testImplementation(project(":allopen-ide-plugin"))
+    testImplementation(project(":noarg-ide-plugin"))
+    testImplementation(project(":kotlin-reflect"))
+    testImplementation(project(":kotlin-scripting-idea"))
+    testImplementation(project(":kotlinx-serialization-ide-plugin"))
+    testImplementation(project(":plugins:parcelize:parcelize-ide"))
+    testImplementation(project(":plugins:lombok:lombok-ide-plugin"))
+    testImplementation(intellijPluginDep("properties"))
+    testImplementation(intellijPluginDep("gradle"))
+    testImplementation(intellijPluginDep("Groovy"))
+    testImplementation(intellijPluginDep("coverage"))
     Ide.IJ {
-        testRuntime(intellijPluginDep("maven"))
-        testRuntime(intellijPluginDep("repository-search"))
+        testImplementation(intellijPluginDep("maven"))
+        testImplementation(intellijPluginDep("repository-search"))
     }
-    testRuntime(intellijPluginDep("android"))
-    testRuntime(intellijPluginDep("smali"))
-    testRuntime(intellijPluginDep("junit"))
-    testRuntime(intellijPluginDep("testng"))
-    testRuntime(intellijPluginDep("IntelliLang"))
-    testRuntime(intellijPluginDep("testng"))
-    testRuntime(intellijPluginDep("copyright"))
-    testRuntime(intellijPluginDep("properties"))
-    testRuntime(intellijPluginDep("java-i18n"))
-    testRuntime(intellijPluginDep("java-decompiler"))
-    testRuntime(project(":plugins:kapt3-idea")) { isTransitive = false }
+    testImplementation(intellijPluginDep("android"))
+    testImplementation(intellijPluginDep("smali"))
+    testImplementation(intellijPluginDep("junit"))
+    testImplementation(intellijPluginDep("testng"))
+    testImplementation(intellijPluginDep("IntelliLang"))
+    testImplementation(intellijPluginDep("testng"))
+    testImplementation(intellijPluginDep("copyright"))
+    testImplementation(intellijPluginDep("properties"))
+    testImplementation(intellijPluginDep("java-i18n"))
+    testImplementation(intellijPluginDep("java-decompiler"))
+    testImplementation(project(":plugins:kapt3-idea")) { isTransitive = false }
 
     Ide.AS {
-        testRuntime(intellijPluginDep("android-layoutlib"))
-        testRuntime(intellijPluginDep("platform-images"))
+        testImplementation(intellijPluginDep("android-layoutlib"))
+        testImplementation(intellijPluginDep("platform-images"))
     }
 }
 

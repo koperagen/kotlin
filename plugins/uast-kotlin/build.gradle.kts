@@ -34,16 +34,16 @@ dependencies {
     testCompileOnly(intellijPluginDep("java")) { includeJars("java-api", "java-impl") }
     testRuntime(intellijPluginDep("java"))
 
-    testCompile(project(":kotlin-test:kotlin-test-jvm"))
-    testCompile(projectTests(":compiler:tests-common"))
-    testCompile(commonDep("junit:junit"))
-    testCompile(project(":compiler:util"))
-    testCompile(project(":compiler:cli"))
-    testCompile(projectTests(":idea:idea-test-framework"))
-    testCompile(projectTests(":plugins:uast-kotlin-base"))
+    testApi(project(":kotlin-test:kotlin-test-jvm"))
+    testApi(projectTests(":compiler:tests-common"))
+    testApi(commonDep("junit:junit"))
+    testApi(project(":compiler:util"))
+    testApi(project(":compiler:cli"))
+    testApi(projectTests(":idea:idea-test-framework"))
+    testApi(projectTests(":plugins:uast-kotlin-base"))
 
-    testCompile(project(":idea:idea-native")) { isTransitive = false }
-    testCompile(project(":idea:idea-gradle-native")) { isTransitive = false }
+    testApi(project(":idea:idea-native")) { isTransitive = false }
+    testApi(project(":idea:idea-gradle-native")) { isTransitive = false }
 
     testRuntimeOnly(toolsJar())
     testRuntime(project(":native:frontend.native"))

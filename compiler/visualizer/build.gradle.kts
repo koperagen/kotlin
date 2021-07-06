@@ -6,8 +6,8 @@ plugins {
 }
 
 dependencies {
-    testRuntime(intellijDep())
-    testCompile(intellijCoreDep()) { includeJars("intellij-core") }
+    testRuntimeOnly(intellijDep())
+    testApi(intellijCoreDep()) { includeJars("intellij-core") }
 
     testCompileOnly(project(":compiler:fir:raw-fir:psi2fir"))
 

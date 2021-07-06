@@ -4,9 +4,9 @@ plugins {
 }
 
 dependencies {
-    compile(project(":kotlin-scripting-jvm"))
-    compile(project(":kotlin-scripting-dependencies"))
-    compile(project(":kotlin-scripting-dependencies-maven"))
+    api(project(":kotlin-scripting-jvm"))
+    api(project(":kotlin-scripting-dependencies"))
+    api(project(":kotlin-scripting-dependencies-maven"))
 }
 
 sourceSets {

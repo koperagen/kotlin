@@ -8,17 +8,17 @@ pill {
 }
 
 dependencies {
-    compile project(':kotlin-gradle-plugin-api')
-    compile project(':kotlin-gradle-plugin-model')
+    api project(':kotlin-gradle-plugin-api')
+    api project(':kotlin-gradle-plugin-model')
 
-    compile kotlinStdlib()
+    api kotlinStdlib()
     compileOnly project(':compiler')
     compileOnly project(':kotlin-noarg-compiler-plugin')
 
     compileOnly gradleApi()
 
-    testCompile gradleApi()
-    testCompile "junit:junit:4.12"
+    testApi gradleApi()
+    testApi "junit:junit:4.12"
 
     embedded(project(":kotlin-noarg-compiler-plugin")) { transitive = false }
 }

@@ -19,13 +19,13 @@ dependencies {
     testCompileOnly(intellijPluginDep("java")) { includeJars("java-api", "java-impl") }
     testRuntime(intellijPluginDep("java"))
 
-    testCompile(project(":idea"))
-    testCompile(projectTests(":j2k"))
-    testCompile(projectTests(":idea"))
-    testCompile(project(":nj2k:nj2k-services"))
-    testCompile(projectTests(":idea:idea-test-framework"))
-    testCompile(project(":kotlin-test:kotlin-test-junit"))
-    testCompile(commonDep("junit:junit"))
+    testApi(project(":idea"))
+    testApi(projectTests(":j2k"))
+    testApi(projectTests(":idea"))
+    testApi(project(":nj2k:nj2k-services"))
+    testApi(projectTests(":idea:idea-test-framework"))
+    testApi(project(":kotlin-test:kotlin-test-junit"))
+    testApi(commonDep("junit:junit"))
 
     testCompileOnly(intellijDep())
 

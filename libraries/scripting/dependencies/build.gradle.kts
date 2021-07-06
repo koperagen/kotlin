@@ -6,10 +6,10 @@ plugins {
 project.updateJvmTarget("1.6")
 
 dependencies {
-    compile(kotlinStdlib())
-    compile(project(":kotlin-scripting-common"))
-    testCompile(commonDep("org.jetbrains.kotlinx", "kotlinx-coroutines-core"))
-    testCompile(commonDep("junit"))
+    api(kotlinStdlib())
+    api(project(":kotlin-scripting-common"))
+    testApi(commonDep("org.jetbrains.kotlinx", "kotlinx-coroutines-core"))
+    testApi(commonDep("junit"))
 }
 
 sourceSets {

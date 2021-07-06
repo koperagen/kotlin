@@ -43,7 +43,7 @@ configurations {
 }
 
 dependencies {
-    compile project(':kotlin-stdlib')
+    api project(':kotlin-stdlib')
     testCompile project(':kotlin-test:kotlin-test-junit')
 }
 
