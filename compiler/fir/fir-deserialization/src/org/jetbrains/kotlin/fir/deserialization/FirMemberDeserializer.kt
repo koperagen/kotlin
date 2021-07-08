@@ -70,7 +70,15 @@ class FirDeserializationContext(
         moduleData,
         packageFqName,
         relativeClassName,
-        FirTypeDeserializer(moduleData, nameResolver, typeTable, annotationDeserializer, typeParameterProtos, typeDeserializer),
+        FirTypeDeserializer(
+            moduleData,
+            nameResolver,
+            typeTable,
+            annotationDeserializer,
+            typeParameterProtos,
+            typeDeserializer,
+            outerClassSymbol
+        ),
         annotationDeserializer,
         constDeserializer,
         containerSource,
@@ -152,7 +160,8 @@ class FirDeserializationContext(
                     typeTable,
                     annotationDeserializer,
                     typeParameterProtos,
-                    null
+                    null,
+                    outerClassSymbol
                 ),
                 annotationDeserializer,
                 constDeserializer,

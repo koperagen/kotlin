@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.fir.expressions.builder.*
 import org.jetbrains.kotlin.fir.expressions.impl.FirSingleExpressionBlock
 import org.jetbrains.kotlin.fir.references.builder.*
 import org.jetbrains.kotlin.fir.scopes.FirScopeProvider
+import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.builder.*
@@ -525,15 +526,48 @@ open class RawFirBuilder(
             extractAnnotationsTo(container.annotations)
         }
 
-        private fun KtTypeParameterListOwner.extractTypeParametersTo(container: FirTypeParameterRefsOwnerBuilder) {
+        private fun KtTypeParameterListOwner.extractTypeParametersTo(
+            container: FirTypeParameterRefsOwnerBuilder,
+            declarationSymbol: FirBasedSymbol<*>
+        ) {
             for (typeParameter in typeParameters) {
-                container.typeParameters += typeParameter.convert<FirTypeParameter>()
+                container.typeParameters += extractTypeParameter(typeParameter, declarationSymbol)
             }
         }
 
-        private fun KtTypeParameterListOwner.extractTypeParametersTo(container: FirTypeParametersOwnerBuilder) {
+        private fun KtTypeParameterListOwner.extractTypeParametersTo(
+            container: FirTypeParametersOwnerBuilder,
+            declarationSymbol: FirBasedSymbol<*>
+        ) {
             for (typeParameter in typeParameters) {
-                container.typeParameters += typeParameter.convert<FirTypeParameter>()
+                container.typeParameters += extractTypeParameter(typeParameter, declarationSymbol)
+            }
+        }
+
+        private fun extractTypeParameter(parameter: KtTypeParameter, declarationSymbol: FirBasedSymbol<*>): FirTypeParameter {
+            val parameterName = parameter.nameAsSafeName
+            return buildTypeParameter {
+                source = parameter.toFirSourceElement()
+                moduleData = baseModuleData
+                origin = FirDeclarationOrigin.Source
+                name = parameterName
+                symbol = FirTypeParameterSymbol()
+                containingDeclarationSymbol = declarationSymbol
+                variance = parameter.variance
+                isReified = parameter.hasModifier(REIFIED_KEYWORD)
+                parameter.extractAnnotationsTo(this)
+                val extendsBound = parameter.extendsBound
+                if (extendsBound != null) {
+                    bounds += extendsBound.convert<FirTypeRef>()
+                }
+                val owner = parameter.getStrictParentOfType<KtTypeParameterListOwner>() ?: return@buildTypeParameter
+                for (typeConstraint in owner.typeConstraints) {
+                    val subjectName = typeConstraint.subjectTypeParameterName?.getReferencedNameAsName()
+                    if (subjectName == parameterName) {
+                        bounds += typeConstraint.boundTypeReference.toFirOrErrorType()
+                    }
+                }
+                addDefaultBoundIfNecessary()
             }
         }
 
@@ -883,7 +917,7 @@ open class RawFirBuilder(
                         symbol = FirRegularClassSymbol(context.currentClassId)
 
                         classOrObject.extractAnnotationsTo(this)
-                        classOrObject.extractTypeParametersTo(this)
+                        classOrObject.extractTypeParametersTo(this, symbol)
 
                         context.applyToActualCapturedTypeParameters(true) {
                             typeParameters += buildOuterClassTypeParameterRef { symbol = it }
@@ -1025,7 +1059,7 @@ open class RawFirBuilder(
                     symbol = FirTypeAliasSymbol(context.currentClassId)
                     expandedTypeRef = typeAlias.getTypeReference().toFirOrErrorType()
                     typeAlias.extractAnnotationsTo(this)
-                    typeAlias.extractTypeParametersTo(this)
+                    typeAlias.extractTypeParametersTo(this, symbol)
                 }
             }
         }
@@ -1083,7 +1117,7 @@ open class RawFirBuilder(
                 context.firFunctionTargets += target
                 function.extractAnnotationsTo(this)
                 if (this is FirSimpleFunctionBuilder) {
-                    function.extractTypeParametersTo(this)
+                    function.extractTypeParametersTo(this, symbol)
                 }
                 for (valueParameter in function.valueParameters) {
                     valueParameters += valueParameter.convert<FirValueParameter>()
@@ -1366,7 +1400,7 @@ open class RawFirBuilder(
                     receiverTypeRef = receiverTypeReference.convertSafe()
                     symbol = FirPropertySymbol(callableIdForName(propertyName))
                     dispatchReceiverType = currentDispatchReceiverType()
-                    extractTypeParametersTo(this)
+                    extractTypeParametersTo(this, symbol)
                     withCapturedTypeParameters(true, this.typeParameters) {
                         val delegateBuilder = if (hasDelegate()) {
                             FirWrappedDelegateExpressionBuilder().apply {
@@ -1547,32 +1581,6 @@ open class RawFirBuilder(
                     source = (annotationEntry.typeReference?.typeElement as? KtUserType)?.referenceExpression?.toFirSourceElement()
                     this.name = name
                 }
-            }
-        }
-
-        override fun visitTypeParameter(parameter: KtTypeParameter, data: Unit): FirElement {
-            val parameterName = parameter.nameAsSafeName
-            return buildTypeParameter {
-                source = parameter.toFirSourceElement()
-                moduleData = baseModuleData
-                origin = FirDeclarationOrigin.Source
-                name = parameterName
-                symbol = FirTypeParameterSymbol()
-                variance = parameter.variance
-                isReified = parameter.hasModifier(REIFIED_KEYWORD)
-                parameter.extractAnnotationsTo(this)
-                val extendsBound = parameter.extendsBound
-                if (extendsBound != null) {
-                    bounds += extendsBound.convert<FirTypeRef>()
-                }
-                val owner = parameter.getStrictParentOfType<KtTypeParameterListOwner>() ?: return@buildTypeParameter
-                for (typeConstraint in owner.typeConstraints) {
-                    val subjectName = typeConstraint.subjectTypeParameterName?.getReferencedNameAsName()
-                    if (subjectName == parameterName) {
-                        bounds += typeConstraint.boundTypeReference.toFirOrErrorType()
-                    }
-                }
-                addDefaultBoundIfNecessary()
             }
         }
 
