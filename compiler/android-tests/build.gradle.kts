@@ -33,8 +33,8 @@ dependencies {
     testApi(jpsStandalone()) { includeJars("jps-model") }
     testApi(jpsBuildTest())
 
-    testRuntimeOnly(intellijCoreDep()) { includeJars("intellij-core") })
-    testRuntimeOnly(intellijDep()) { includeJars("jna", rootProject = rootProject) })
+    testRuntimeOnly(intellijCoreDep()) { includeJars("intellij-core") }
+    testRuntimeOnly(intellijDep()) { includeJars("jna", rootProject = rootProject) }
 
     testApi("org.junit.platform:junit-platform-launcher:${commonVer("org.junit.platform", "")}")
 }

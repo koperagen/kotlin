@@ -8,7 +8,7 @@ dependencies {
     testImplementation(projectTests(":compiler:test-infrastructure"))
     testImplementation(projectTests(":compiler:tests-common-new"))
 
-    testCompile(intellijDep()) {
+    testApi(intellijDep()) {
         includeJars("groovy", "groovy-xml", rootProject = rootProject)
     }
     testApi(intellijDep()) {

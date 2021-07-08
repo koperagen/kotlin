@@ -6,8 +6,8 @@ plugins {
 project.updateJvmTarget("1.8")
 
 val allTestsRuntime by configurations.creating
-val testCompile by configurations
-testCompile.extendsFrom(allTestsRuntime)
+val testApi by configurations
+testApi.extendsFrom(allTestsRuntime)
 val embeddableTestRuntime by configurations.creating {
     extendsFrom(allTestsRuntime)
     attributes {
