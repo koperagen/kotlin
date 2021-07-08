@@ -16,15 +16,15 @@ FILE: typeParameterOfTopSetter.kt
 
 SUPER_TYPES:
 FILE: typeParameterOfTopSetter.kt
-    public? final? [RAW_FIR] var x: Int = IntegerLiteral(2)
+    public? final? [SUPER_TYPES] var x: Int = IntegerLiteral(2)
         [TYPES] public? get(): Int
-        [RAW_FIR] public? set([RAW_FIR] resolveMe: Int): R|kotlin/Unit| {
+        [SUPER_TYPES] public? set([RAW_FIR] resolveMe: Int): R|kotlin/Unit| {
             ^ Unit#
         }
 
 TYPES:
 FILE: typeParameterOfTopSetter.kt
-    public? final? [TYPES] [ResolvePhaseWithForAllDeclarationsKey=TYPES] var x: R|kotlin/Int| = IntegerLiteral(2)
+    public? final? [TYPES] var x: R|kotlin/Int| = IntegerLiteral(2)
         [TYPES] public? get(): R|kotlin/Int|
         [TYPES] public? set([RAW_FIR] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Unit#
@@ -32,7 +32,7 @@ FILE: typeParameterOfTopSetter.kt
 
 STATUS:
 FILE: typeParameterOfTopSetter.kt
-    public final [STATUS] [ResolvePhaseWithForAllDeclarationsKey=STATUS] var x: R|kotlin/Int| = IntegerLiteral(2)
+    public final [STATUS] var x: R|kotlin/Int| = IntegerLiteral(2)
         [BODY_RESOLVE] public get(): R|kotlin/Int|
         [STATUS] public set([RAW_FIR] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Unit#
@@ -40,7 +40,7 @@ FILE: typeParameterOfTopSetter.kt
 
 CONTRACTS:
 FILE: typeParameterOfTopSetter.kt
-    public final [CONTRACTS] [ResolvePhaseWithForAllDeclarationsKey=CONTRACTS] var x: R|kotlin/Int| = IntegerLiteral(2)
+    public final [CONTRACTS] var x: R|kotlin/Int| = IntegerLiteral(2)
         [BODY_RESOLVE] public get(): R|kotlin/Int|
         [CONTRACTS] public set([RAW_FIR] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Unit#
@@ -48,15 +48,15 @@ FILE: typeParameterOfTopSetter.kt
 
 IMPLICIT_TYPES_BODY_RESOLVE:
 FILE: typeParameterOfTopSetter.kt
-    public final [CONTRACTS] [ResolvePhaseWithForAllDeclarationsKey=IMPLICIT_TYPES_BODY_RESOLVE] var x: R|kotlin/Int| = IntegerLiteral(2)
+    public final [IMPLICIT_TYPES_BODY_RESOLVE] var x: R|kotlin/Int| = IntegerLiteral(2)
         [BODY_RESOLVE] public get(): R|kotlin/Int|
-        [CONTRACTS] public set([RAW_FIR] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
+        [IMPLICIT_TYPES_BODY_RESOLVE] public set([RAW_FIR] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Unit#
         }
 
 BODY_RESOLVE:
 FILE: typeParameterOfTopSetter.kt
-    public final [BODY_RESOLVE] [ResolvePhaseWithForAllDeclarationsKey=BODY_RESOLVE] var x: R|kotlin/Int| = Int(2)
+    public final [BODY_RESOLVE] var x: R|kotlin/Int| = Int(2)
         [BODY_RESOLVE] public get(): R|kotlin/Int|
         [BODY_RESOLVE] public set([BODY_RESOLVE] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Q|kotlin/Unit|
@@ -72,7 +72,7 @@ FILE: typeParameterOfTopSetter.kt
 
 BodyResolveWithChildren:
 FILE: typeParameterOfTopSetter.kt
-    public final [BODY_RESOLVE] [ResolvePhaseWithForAllDeclarationsKey=BODY_RESOLVE] var x: R|kotlin/Int| = Int(2)
+    public final [BODY_RESOLVE] var x: R|kotlin/Int| = Int(2)
         [BODY_RESOLVE] public get(): R|kotlin/Int|
         [BODY_RESOLVE] public set([BODY_RESOLVE] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Q|kotlin/Unit|
@@ -80,7 +80,7 @@ FILE: typeParameterOfTopSetter.kt
 
 CallableBodyResolve:
 FILE: typeParameterOfTopSetter.kt
-    public final [BODY_RESOLVE] [ResolvePhaseWithForAllDeclarationsKey=BODY_RESOLVE] var x: R|kotlin/Int| = Int(2)
+    public final [BODY_RESOLVE] var x: R|kotlin/Int| = Int(2)
         [BODY_RESOLVE] public get(): R|kotlin/Int|
         [BODY_RESOLVE] public set([BODY_RESOLVE] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Q|kotlin/Unit|
@@ -88,7 +88,7 @@ FILE: typeParameterOfTopSetter.kt
 
 CallableReturnType:
 FILE: typeParameterOfTopSetter.kt
-    public? final? [TYPES] [ResolvePhaseWithForAllDeclarationsKey=TYPES] var x: R|kotlin/Int| = IntegerLiteral(2)
+    public? final? [TYPES] var x: R|kotlin/Int| = IntegerLiteral(2)
         [TYPES] public? get(): R|kotlin/Int|
         [TYPES] public? set([RAW_FIR] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Unit#
@@ -96,7 +96,7 @@ FILE: typeParameterOfTopSetter.kt
 
 AnnotationType:
 FILE: typeParameterOfTopSetter.kt
-    public? final? [TYPES] [ResolvePhaseWithForAllDeclarationsKey=TYPES] var x: R|kotlin/Int| = IntegerLiteral(2)
+    public? final? [TYPES] var x: R|kotlin/Int| = IntegerLiteral(2)
         [TYPES] public? get(): R|kotlin/Int|
         [TYPES] public? set([RAW_FIR] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Unit#
@@ -104,7 +104,7 @@ FILE: typeParameterOfTopSetter.kt
 
 AnnotationsArguments:
 FILE: typeParameterOfTopSetter.kt
-    public final [BODY_RESOLVE] [ResolvePhaseWithForAllDeclarationsKey=BODY_RESOLVE] var x: R|kotlin/Int| = Int(2)
+    public final [BODY_RESOLVE] var x: R|kotlin/Int| = Int(2)
         [BODY_RESOLVE] public get(): R|kotlin/Int|
         [BODY_RESOLVE] public set([BODY_RESOLVE] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Q|kotlin/Unit|
@@ -112,7 +112,7 @@ FILE: typeParameterOfTopSetter.kt
 
 CallableContracts:
 FILE: typeParameterOfTopSetter.kt
-    public final [CONTRACTS] [ResolvePhaseWithForAllDeclarationsKey=CONTRACTS] var x: R|kotlin/Int| = IntegerLiteral(2)
+    public final [CONTRACTS] var x: R|kotlin/Int| = IntegerLiteral(2)
         [BODY_RESOLVE] public get(): R|kotlin/Int|
         [CONTRACTS] public set([RAW_FIR] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Unit#
@@ -120,7 +120,7 @@ FILE: typeParameterOfTopSetter.kt
 
 DeclarationStatus:
 FILE: typeParameterOfTopSetter.kt
-    public final [STATUS] [ResolvePhaseWithForAllDeclarationsKey=STATUS] var x: R|kotlin/Int| = IntegerLiteral(2)
+    public final [STATUS] var x: R|kotlin/Int| = IntegerLiteral(2)
         [BODY_RESOLVE] public get(): R|kotlin/Int|
         [STATUS] public set([RAW_FIR] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Unit#
@@ -128,7 +128,7 @@ FILE: typeParameterOfTopSetter.kt
 
 ValueParametersTypes:
 FILE: typeParameterOfTopSetter.kt
-    public? final? [TYPES] [ResolvePhaseWithForAllDeclarationsKey=TYPES] var x: R|kotlin/Int| = IntegerLiteral(2)
+    public? final? [TYPES] var x: R|kotlin/Int| = IntegerLiteral(2)
         [TYPES] public? get(): R|kotlin/Int|
         [TYPES] public? set([RAW_FIR] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Unit#
@@ -136,7 +136,7 @@ FILE: typeParameterOfTopSetter.kt
 
 TypeParametersTypes:
 FILE: typeParameterOfTopSetter.kt
-    public? final? [TYPES] [ResolvePhaseWithForAllDeclarationsKey=TYPES] var x: R|kotlin/Int| = IntegerLiteral(2)
+    public? final? [TYPES] var x: R|kotlin/Int| = IntegerLiteral(2)
         [TYPES] public? get(): R|kotlin/Int|
         [TYPES] public? set([RAW_FIR] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Unit#
@@ -144,7 +144,7 @@ FILE: typeParameterOfTopSetter.kt
 
 FILE RAW TO BODY:
 FILE: typeParameterOfTopSetter.kt
-    public final [BODY_RESOLVE] [ResolvePhaseWithForAllDeclarationsKey=BODY_RESOLVE] var x: R|kotlin/Int| = Int(2)
+    public final [BODY_RESOLVE] var x: R|kotlin/Int| = Int(2)
         [BODY_RESOLVE] public get(): R|kotlin/Int|
         [BODY_RESOLVE] public set([BODY_RESOLVE] resolveMe: R|kotlin/Int|): R|kotlin/Unit| {
             ^ Q|kotlin/Unit|
