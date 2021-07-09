@@ -4,6 +4,8 @@
 // WITH_RUNTIME
 // !LANGUAGE: +InstantiationOfAnnotationClasses
 
+package a
+
 import kotlin.reflect.KClass
 
 enum class E { A, B }
@@ -29,8 +31,8 @@ annotation class Partial(
 
 fun box(): String {
     val c = C()
-    assert(c.toString() == "@C(i=42, b=@B(a=@A()), kClass=interface B (Kotlin reflection is not available), e=B, aS=[a, b], aI=[1, 2])")
+    assert(c.toString() == "@a.C(i=42, b=@a.B(a=@a.A()), kClass=interface a.B (Kotlin reflection is not available), e=B, aS=[a, b], aI=[1, 2])")
     val p = Partial(e = E.B, s = "bar")
-    assert(p.toString() == "@Partial(i=42, s=bar, e=B)")
+    assert(p.toString() == "@a.Partial(i=42, s=bar, e=B)")
     return "OK"
 }

@@ -420,15 +420,21 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
             }
 
             @Test
-            @TestMetadata("instanceInlining.kt")
-            public void testInstanceInlining() throws Exception {
-                runTest("compiler/testData/codegen/box/annotations/instances/instanceInlining.kt");
-            }
-
-            @Test
             @TestMetadata("javaAnnotation.kt")
             public void testJavaAnnotation() throws Exception {
                 runTest("compiler/testData/codegen/box/annotations/instances/javaAnnotation.kt");
+            }
+
+            @Test
+            @TestMetadata("multifileEqHc.kt")
+            public void testMultifileEqHc() throws Exception {
+                runTest("compiler/testData/codegen/box/annotations/instances/multifileEqHc.kt");
+            }
+
+            @Test
+            @TestMetadata("multiplatformInstantiation.kt")
+            public void testMultiplatformInstantiation() throws Exception {
+                runTest("compiler/testData/codegen/box/annotations/instances/multiplatformInstantiation.kt");
             }
         }
 

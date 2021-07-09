@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.findDeclaration
 import org.jetbrains.kotlin.ir.util.isPrimitiveArray
+import org.jetbrains.kotlin.ir.util.render
 
 internal val annotationImplementationPhase = makeIrFilePhase<JvmBackendContext>(
     { ctxt -> AnnotationImplementationLowering { JvmAnnotationImplementationTransformer(ctxt, it) } },
@@ -40,7 +41,7 @@ class JvmAnnotationImplementationTransformer(val jvmContext: JvmBackendContext, 
     }
 
     private fun IrType.isKClassArray() =
-        this.isArray() && (this as? IrSimpleType)?.arguments?.any { it.typeOrNull?.isKClass() == true } == true
+        this is IrSimpleType && isArray() && arguments.single().typeOrNull?.isKClass() == true
 
     override fun IrBuilderWithScope.kClassExprToJClassIfNeeded(irExpression: IrExpression): IrExpression {
         with(this) {
@@ -60,13 +61,12 @@ class JvmAnnotationImplementationTransformer(val jvmContext: JvmBackendContext, 
             val requiredSymbol = jvmContext.ir.symbols.arraysClass.owner.findDeclaration<IrFunction> {
                 it.name.asString() == "equals" && it.valueParameters.size == 2 && it.valueParameters.first().type == targetType
             }
-            if (requiredSymbol != null) {
-                return irBuilder.irCall(
-                    requiredSymbol.symbol
-                ).apply {
-                    putValueArgument(0, arg1)
-                    putValueArgument(1, arg2)
-                }
+            requireNotNull(requiredSymbol) { "Can't find Arrays.equals method for type ${targetType.render()}" }
+            return irBuilder.irCall(
+                requiredSymbol.symbol
+            ).apply {
+                putValueArgument(0, arg1)
+                putValueArgument(1, arg2)
             }
         }
         return super.generatedEquals(irBuilder, type, arg1, arg2)

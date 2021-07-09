@@ -39,5 +39,6 @@ fun box(): String {
     // or hack LazyJavaClassDescriptor/JavaPropertyDescriptor to load annotation param default value,
     // because it is not stored currently anywhere.
     // val d = D()
-    return "OK"
+    val d = D("OK").value
+    return d
 }

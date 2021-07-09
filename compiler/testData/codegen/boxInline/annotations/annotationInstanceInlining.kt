@@ -1,20 +1,22 @@
 // IGNORE_BACKEND_FIR: JVM_IR
 // TARGET_BACKEND: JVM_IR
-
+// IGNORE_BACKEND_MULTI_MODULE: JVM_MULTI_MODULE_OLD_AGAINST_IR, JVM_MULTI_MODULE_IR_AGAINST_OLD
 // WITH_RUNTIME
 // !LANGUAGE: +InstantiationOfAnnotationClasses
 
-// FILE: a.kt
+// FILE: 1.kt
+
+package a
 
 annotation class A(val i: Int)
-
-// FILE: b.kt
 
 inline fun foo(i: Int): A = A(i)
 
 inline fun bar(f: () -> Int): A = A(f())
 
-// FILE: c.kt
+// FILE: 2.kt
+
+import a.*
 
 class C {
     fun one(): A {
@@ -32,7 +34,7 @@ fun box(): String {
     val two = two()
     assert(two.i == 2)
     // Check they're generated on original use site
-    assert(one.javaClass.getName().startsWith("BKt"))
-    assert(two.javaClass.getName().startsWith("BKt"))
+    assert(one.javaClass.getName().startsWith("a._1Kt"))
+    assert(two.javaClass.getName().startsWith("a._1Kt"))
     return "OK"
 }
