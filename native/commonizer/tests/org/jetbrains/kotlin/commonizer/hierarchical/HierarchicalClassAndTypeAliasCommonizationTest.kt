@@ -574,8 +574,7 @@ class HierarchicalClassAndTypeAliasCommonizationTest : AbstractInlineSourcesComm
         )
     }
 
-    @Suppress("unused")
-    fun `ignored KT-47433 - test boxed function using TA and expanded type`() {
+    fun `test boxed function using TA and expanded type`() {
         val result = commonize {
             outputTarget("(a, b)")
 
@@ -607,8 +606,7 @@ class HierarchicalClassAndTypeAliasCommonizationTest : AbstractInlineSourcesComm
         )
     }
 
-    @Suppress("unused")
-    fun `ignored KT-47433 - test parameters with non-commonized TA expanding to a commonized type`() {
+    fun `test parameters with non-commonized TA expanding to a commonized type`() {
         val result = commonize {
             outputTarget("(a, b)")
 
