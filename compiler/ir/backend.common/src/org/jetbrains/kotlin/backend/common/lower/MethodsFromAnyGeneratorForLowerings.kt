@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.backend.common.BackendContext
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
+import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.addValueParameter
 import org.jetbrains.kotlin.ir.declarations.*
@@ -39,6 +39,7 @@ class MethodsFromAnyGeneratorForLowerings(val context: BackendContext, val irCla
 
     inner class LoweringDataClassMemberGenerator(
         val nameForToString: String,
+        val typeForEquals: IrType,
         val selectEquals: IrBlockBodyBuilder.(IrType, IrExpression, IrExpression) -> IrExpression,
     ) :
         DataClassMembersGenerator(
@@ -83,11 +84,27 @@ class MethodsFromAnyGeneratorForLowerings(val context: BackendContext, val irCla
             }
         }
 
-        override fun IrBlockBodyBuilder.notEqualsExpression(type: IrType, arg1: IrExpression, arg2: IrExpression): IrExpression {
-            return irNot(selectEquals(type, arg1, arg2))
-        }
-
         override fun IrClass.classNameForToString(): String = nameForToString
+
+        fun generateEqualsUsingGetters(equalsFun: IrSimpleFunction, typeForEquals: IrType, properties: List<IrProperty>) = equalsFun.apply {
+            body = this@MethodsFromAnyGeneratorForLowerings.context.createIrBuilder(symbol).irBlockBody {
+                val irType = typeForEquals
+                fun irOther() = irGet(valueParameters[0])
+                fun irThis() = irGet(dispatchReceiverParameter!!)
+                fun IrProperty.get(receiver: IrExpression) = irCall(getter!!).apply {
+                    dispatchReceiver = receiver
+                }
+
+                +irIfThenReturnFalse(irNotIs(irOther(), irType))
+                val otherWithCast = irTemporary(irAs(irOther(), irType), "other_with_cast")
+                for (property in properties) {
+                    val arg1 = property.get(irThis())
+                    val arg2 = property.get(irGet(irType, otherWithCast.symbol))
+                    +irIfThenReturnFalse(irNot(selectEquals(property.getter?.returnType ?: property.backingField!!.type, arg1, arg2)))
+                }
+                +irReturnTrue()
+            }
+        }
     }
 
     companion object {

@@ -145,7 +145,7 @@ abstract class DataClassMembersGenerator(
             for (property in properties) {
                 val arg1 = irGetProperty(irThis(), property)
                 val arg2 = irGetProperty(irGet(irType, otherWithCast.symbol), property)
-                +irIfThenReturnFalse(notEqualsExpression(property.getter?.returnType ?: property.backingField!!.type, arg1, arg2))
+                +irIfThenReturnFalse(irNotEquals(arg1, arg2))
             }
             +irReturnTrue()
         }
@@ -244,8 +244,6 @@ abstract class DataClassMembersGenerator(
         }
     }
 
-    open fun IrClass.classNameForToString(): String = irClass.name.asString()
-
     fun getIrProperty(property: PropertyDescriptor): IrProperty =
         irPropertiesByDescriptor[property]
             ?: throw AssertionError("Class: ${irClass.descriptor}: unexpected property descriptor: $property")
@@ -342,8 +340,6 @@ abstract class DataClassMembersGenerator(
         }
     }
 
-    open fun IrBlockBodyBuilder.notEqualsExpression(type: IrType, arg1: IrExpression, arg2: IrExpression) = irNotEquals(arg1, arg2)
-
     interface HashCodeFunctionInfo {
         val symbol: IrSimpleFunctionSymbol
         fun commitSubstituted(irMemberAccessExpression: IrMemberAccessExpression<*>)
@@ -378,4 +374,6 @@ abstract class DataClassMembersGenerator(
             generateToStringMethodBody(properties)
         }
     }
+
+    open fun IrClass.classNameForToString(): String = irClass.name.asString()
 }

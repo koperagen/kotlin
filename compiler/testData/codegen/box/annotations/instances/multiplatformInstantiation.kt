@@ -23,8 +23,8 @@ fun createPlatform(): A = A("OK")
 fun createApp(): A = A("OK")
 
 fun box(): String {
-    if (createApp().value != "OK") return "FAIL"
-    if (createCommon().value != "OK") return "FAIL"
-    if (createPlatform().value != "OK") return "FAIL"
+    if (createApp().value != "OK") return "FAIL app"
+    if (createCommon().value != "OK") return "FAIL common"
+    if (createPlatform().value != "OK") return "FAIL platform"
     return "OK"
 }

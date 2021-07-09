@@ -5,7 +5,10 @@
 
 package org.jetbrains.kotlin.backend.common.lower
 
-import org.jetbrains.kotlin.backend.common.*
+import org.jetbrains.kotlin.backend.common.BackendContext
+import org.jetbrains.kotlin.backend.common.FileLoweringPass
+import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
+import org.jetbrains.kotlin.backend.common.deepCopyWithVariables
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.createImplicitParameterDeclarationWithWrappedDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
@@ -84,13 +87,13 @@ open class AnnotationImplementationTransformer(val context: BackendContext, val 
         val ctor = subclass.addConstructor {
             visibility = DescriptorVisibilities.PUBLIC
         }
-        val props = implementAnnotationProperties(subclass, annotationClass, ctor)
-        implementEqualsAndHashCode(annotationClass, subclass, props)
+        val (originalProps, implementationProps) = implementAnnotationProperties(subclass, annotationClass, ctor)
+        implementEqualsAndHashCode(annotationClass, subclass, originalProps, implementationProps)
         implementPlatformSpecificParts(annotationClass, subclass)
         return subclass
     }
 
-    fun implementAnnotationProperties(implClass: IrClass, annotationClass: IrClass, generatedConstructor: IrConstructor): List<IrProperty> {
+    fun implementAnnotationProperties(implClass: IrClass, annotationClass: IrClass, generatedConstructor: IrConstructor): Pair<List<IrProperty>, List<IrProperty>> {
         val ctorBody = context.irFactory.createBlockBody(
             UNDEFINED_OFFSET, UNDEFINED_OFFSET, listOf(
                 IrDelegatingConstructorCallImpl(
@@ -104,7 +107,7 @@ open class AnnotationImplementationTransformer(val context: BackendContext, val 
 
         val properties = annotationClass.getAnnotationProperties()
 
-        return properties.map { property ->
+        return properties to properties.map { property ->
 
             val propType = property.getter!!.returnType
             val propName = property.name
@@ -172,26 +175,32 @@ open class AnnotationImplementationTransformer(val context: BackendContext, val 
 
     open fun IrBuilderWithScope.kClassExprToJClassIfNeeded(irExpression: IrExpression): IrExpression = irExpression
 
-    open fun generatedEquals(irBuilder: IrBlockBodyBuilder, type: IrType, arg1: IrExpression, arg2: IrExpression): IrExpression {
-        return irBuilder.irEquals(arg1, arg2)
-    }
+    open fun generatedEquals(irBuilder: IrBlockBodyBuilder, type: IrType, arg1: IrExpression, arg2: IrExpression): IrExpression =
+        irBuilder.irEquals(arg1, arg2)
 
     @Suppress("UNUSED_VARIABLE")
-    fun implementEqualsAndHashCode(annotationClass: IrClass, implClass: IrClass, props: List<IrProperty>) {
+    fun implementEqualsAndHashCode(annotationClass: IrClass, implClass: IrClass, originalProps: List<IrProperty>, childProps: List<IrProperty>) {
         val creator = MethodsFromAnyGeneratorForLowerings(context, implClass, ANNOTATION_IMPLEMENTATION)
         val generator =
-            creator.LoweringDataClassMemberGenerator("@" + annotationClass.fqNameWhenAvailable!!.asString()) { type, a, b ->
+            creator.LoweringDataClassMemberGenerator(
+                nameForToString = "@" + annotationClass.fqNameWhenAvailable!!.asString(),
+                typeForEquals = annotationClass.defaultType
+            ) { type, a, b ->
                 generatedEquals(this, type, a, b)
             }
 
+        // Manual implementation of equals is required for two reasons:
+        // 1. `other` should be casted to interface instead of implementation
+        // 2. Properties should be retrieved using getters without accessing backing fields
+        //    (DataClassMembersGenerator typically tries to access fields)
         val eqFun = creator.createEqualsMethodDeclaration()
-        generator.generateEqualsMethod(eqFun, props)
+        generator.generateEqualsUsingGetters(eqFun, annotationClass.defaultType, originalProps)
 
         val hcFun = creator.createHashCodeMethodDeclaration()
-        generator.generateHashCodeMethod(hcFun, props)
+        generator.generateHashCodeMethod(hcFun, childProps)
 
         val toStringFun = creator.createToStringMethodDeclaration()
-        generator.generateToStringMethod(toStringFun, props)
+        generator.generateToStringMethod(toStringFun, childProps)
     }
 
     open fun implementPlatformSpecificParts(annotationClass: IrClass, implClass: IrClass) {}
