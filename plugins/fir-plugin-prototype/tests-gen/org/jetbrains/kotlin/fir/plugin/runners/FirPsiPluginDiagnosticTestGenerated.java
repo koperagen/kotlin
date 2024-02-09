@@ -148,6 +148,12 @@ public class FirPsiPluginDiagnosticTestGenerated extends AbstractFirPsiPluginDia
         }
 
         @Test
+        @TestMetadata("callShapeBasedInjector.kt")
+        public void testCallShapeBasedInjector() throws Exception {
+            runTest("plugins/fir-plugin-prototype/testData/diagnostics/receivers/callShapeBasedInjector.kt");
+        }
+
+        @Test
         @TestMetadata("receiverInjection.kt")
         public void testReceiverInjection() throws Exception {
             runTest("plugins/fir-plugin-prototype/testData/diagnostics/receivers/receiverInjection.kt");
