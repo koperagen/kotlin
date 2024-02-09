@@ -12,9 +12,13 @@ import org.jetbrains.kotlin.fir.declarations.FirDeclarationOrigin
 import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
 import org.jetbrains.kotlin.fir.declarations.builder.buildErrorFunction
 import org.jetbrains.kotlin.fir.declarations.builder.buildErrorProperty
+import org.jetbrains.kotlin.fir.declarations.builder.buildSimpleFunctionCopy
 import org.jetbrains.kotlin.fir.declarations.fullyExpandedClass
 import org.jetbrains.kotlin.fir.diagnostics.ConeDiagnostic
 import org.jetbrains.kotlin.fir.expressions.*
+import org.jetbrains.kotlin.fir.extensions.*
+import org.jetbrains.kotlin.fir.extensions.OriginalCallData
+import org.jetbrains.kotlin.fir.extensions.originalCallData
 import org.jetbrains.kotlin.fir.resolve.isIntegerLiteralOrOperatorCall
 import org.jetbrains.kotlin.fir.resolve.toFirRegularClass
 import org.jetbrains.kotlin.fir.scopes.FirScope
@@ -31,6 +35,8 @@ class CandidateFactory private constructor(
     val context: ResolutionContext,
     private val baseSystem: ConstraintStorage
 ) {
+
+    private val callRefinementExtensions = context.session.extensionService.callRefinementExtensions.takeIf { it.isNotEmpty() }
 
     companion object {
         private fun buildBaseSystem(context: ResolutionContext, callInfo: CallInfo): ConstraintStorage {
@@ -58,8 +64,19 @@ class CandidateFactory private constructor(
         objectsByName: Boolean = false,
         isFromOriginalTypeInPresenceOfSmartCast: Boolean = false,
     ): Candidate {
+        var pluginAmbiguity: AmbiguousInterceptedSymbol? = null
         @Suppress("NAME_SHADOWING")
-        val symbol = symbol.unwrapIntegerOperatorSymbolIfNeeded(callInfo)
+        val symbol = if (
+            callRefinementExtensions != null &&
+            callInfo.callKind == CallKind.Function &&
+            symbol is FirNamedFunctionSymbol
+        ) {
+            val result = symbol.replaceFromPluginsIfNeeded(callRefinementExtensions, callInfo)
+            pluginAmbiguity = result.second
+            result.first
+        } else {
+            symbol.unwrapIntegerOperatorSymbolIfNeeded(callInfo)
+        }
 
         val result = Candidate(
             symbol,
@@ -80,6 +97,10 @@ class CandidateFactory private constructor(
             isFromOriginalTypeInPresenceOfSmartCast,
             context.bodyResolveContext.inferenceSession,
         )
+
+        if (pluginAmbiguity != null) {
+            result.addDiagnostic(pluginAmbiguity)
+        }
 
         // The counterpart in FE 1.0 checks if the given descriptor is VariableDescriptor yet not PropertyDescriptor.
         // Here, we explicitly check if the referred declaration/symbol is value parameter, local variable, enum entry, or backing field.
@@ -120,6 +141,56 @@ class CandidateFactory private constructor(
             }
         }
         return result
+    }
+
+    private fun FirNamedFunctionSymbol.replaceFromPluginsIfNeeded(
+        callRefinementExtensions: List<FirFunctionCallRefinementExtension>,
+        callInfo: CallInfo,
+    ): Pair<FirBasedSymbol<*>, AmbiguousInterceptedSymbol?> {
+        var pluginAmbiguity: AmbiguousInterceptedSymbol? = null
+        fun process(result: FirFunctionCallRefinementExtension.CallReturnType, extension: FirFunctionCallRefinementExtension): FirNamedFunctionSymbol {
+            val newSymbol = FirNamedFunctionSymbol(callableId)
+            val function = buildSimpleFunctionCopy(fir) {
+                body = null
+                this.symbol = newSymbol
+                returnTypeRef = result.typeRef
+            }
+            newSymbol.bind(function)
+            function.originalCallData = OriginalCallData(this, extension)
+            result.callback?.invoke(newSymbol)
+            return newSymbol
+        }
+
+        val firBasedSymbol = if (callRefinementExtensions.size == 1) {
+            val extension = callRefinementExtensions[0]
+            val result = extension.intercept(callInfo, this)
+
+            if (result != null) {
+                process(result, extension)
+            } else {
+                unwrapIntegerOperatorSymbolIfNeeded(callInfo)
+            }
+        } else {
+            val variants = context.session.extensionService.callRefinementExtensions.mapNotNull { extension ->
+                val result = extension.intercept(callInfo, this)
+                result?.let { it to extension }
+            }
+            when (variants.size) {
+                0 -> {
+                    unwrapIntegerOperatorSymbolIfNeeded(callInfo)
+                }
+                1 -> {
+                    val (result, extension) = variants[0]
+                    process(result, extension)
+                }
+                else -> {
+                    pluginAmbiguity =
+                        AmbiguousInterceptedSymbol(variants.map { it.second::class.qualifiedName ?: it.second.javaClass.name })
+                    unwrapIntegerOperatorSymbolIfNeeded(callInfo)
+                }
+            }
+        }
+        return Pair(firBasedSymbol, pluginAmbiguity)
     }
 
     private fun FirBasedSymbol<*>.isRegularClassWithoutCompanion(session: FirSession): Boolean {
