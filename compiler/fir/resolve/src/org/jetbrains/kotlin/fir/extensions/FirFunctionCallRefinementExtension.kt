@@ -15,6 +15,20 @@ import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import kotlin.reflect.KClass
 
+/**
+ * This extension integrates with call resolution mechanism:
+ * resolution and completion of the receiver
+ * resolution of arguments
+ * resolution of the call itself
+ *  - [intercept] is called
+ * resolution of the outer call
+ * completion of the call
+ *  - [transform] is called
+ * completion of the outer call
+ *
+ * !!!! This extension is highly unstable and not recommended to use !!!!
+ */
+@FirExtensionApiInternals
 abstract class FirFunctionCallRefinementExtension(session: FirSession) : FirExtension(session) {
     companion object {
         val NAME = FirExtensionPointName("FunctionCallRefinementExtension")
@@ -46,7 +60,6 @@ abstract class FirFunctionCallRefinementExtension(session: FirSession) : FirExte
      */
     abstract fun intercept(callInfo: CallInfo, symbol: FirNamedFunctionSymbol): CallReturnType?
 
-
     /**
      *
      * Data can be associated with [FirNamedFunctionSymbol] in [callback]
@@ -55,7 +68,7 @@ abstract class FirFunctionCallRefinementExtension(session: FirSession) : FirExte
 
     /**
      * @param call to a function that was created with modified [FirResolvedTypeRef] as a result of [intercept].
-     * This copy doesn't exist in FIR, it is needed to complete the call.
+     * This function doesn't exist in FIR, it is needed to complete the call.
      * @param originalSymbol [intercept] is called with symbol to a declaration that exists somewhere in FIR: library, project code.
      * The same symbol is [originalSymbol].
      * [transform] needs to generate call to [let] with the same return type as [call]
@@ -66,10 +79,12 @@ abstract class FirFunctionCallRefinementExtension(session: FirSession) : FirExte
     fun interface Factory : FirExtension.Factory<FirFunctionCallRefinementExtension>
 }
 
+@OptIn(FirExtensionApiInternals::class)
 val FirExtensionService.callRefinementExtensions: List<FirFunctionCallRefinementExtension> by FirExtensionService.registeredExtensions()
 
+@OptIn(FirExtensionApiInternals::class)
 internal class OriginalCallData(val originalSymbol: FirNamedFunctionSymbol, val extension: FirFunctionCallRefinementExtension)
 
 internal object OriginalCallDataKey : FirDeclarationDataKey()
 
-internal var FirDeclaration.originalCallData: OriginalCallData? by FirDeclarationDataRegistry.data(OriginalCallDataKey)
+internal var FirDeclaration.originalCallDataForPluginRefinedCall: OriginalCallData? by FirDeclarationDataRegistry.data(OriginalCallDataKey)

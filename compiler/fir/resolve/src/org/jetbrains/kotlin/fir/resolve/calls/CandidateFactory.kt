@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.fir.diagnostics.ConeDiagnostic
 import org.jetbrains.kotlin.fir.expressions.*
 import org.jetbrains.kotlin.fir.extensions.*
 import org.jetbrains.kotlin.fir.extensions.OriginalCallData
-import org.jetbrains.kotlin.fir.extensions.originalCallData
+import org.jetbrains.kotlin.fir.extensions.originalCallDataForPluginRefinedCall
 import org.jetbrains.kotlin.fir.resolve.isIntegerLiteralOrOperatorCall
 import org.jetbrains.kotlin.fir.resolve.toFirRegularClass
 import org.jetbrains.kotlin.fir.scopes.FirScope
@@ -35,7 +35,7 @@ class CandidateFactory private constructor(
     val context: ResolutionContext,
     private val baseSystem: ConstraintStorage
 ) {
-
+    @OptIn(FirExtensionApiInternals::class)
     private val callRefinementExtensions = context.session.extensionService.callRefinementExtensions.takeIf { it.isNotEmpty() }
 
     companion object {
@@ -65,7 +65,9 @@ class CandidateFactory private constructor(
         isFromOriginalTypeInPresenceOfSmartCast: Boolean = false,
     ): Candidate {
         var pluginAmbiguity: AmbiguousInterceptedSymbol? = null
+
         @Suppress("NAME_SHADOWING")
+        @OptIn(FirExtensionApiInternals::class)
         val symbol = if (
             callRefinementExtensions != null &&
             callInfo.callKind == CallKind.Function &&
@@ -143,51 +145,43 @@ class CandidateFactory private constructor(
         return result
     }
 
+    @OptIn(FirExtensionApiInternals::class)
     private fun FirNamedFunctionSymbol.replaceFromPluginsIfNeeded(
         callRefinementExtensions: List<FirFunctionCallRefinementExtension>,
         callInfo: CallInfo,
     ): Pair<FirBasedSymbol<*>, AmbiguousInterceptedSymbol?> {
         var pluginAmbiguity: AmbiguousInterceptedSymbol? = null
-        fun process(result: FirFunctionCallRefinementExtension.CallReturnType, extension: FirFunctionCallRefinementExtension): FirNamedFunctionSymbol {
+        fun process(
+            result: FirFunctionCallRefinementExtension.CallReturnType,
+            extension: FirFunctionCallRefinementExtension
+        ): FirNamedFunctionSymbol {
             val newSymbol = FirNamedFunctionSymbol(callableId)
             val function = buildSimpleFunctionCopy(fir) {
                 body = null
                 this.symbol = newSymbol
                 returnTypeRef = result.typeRef
             }
-            newSymbol.bind(function)
-            function.originalCallData = OriginalCallData(this, extension)
+            function.originalCallDataForPluginRefinedCall = OriginalCallData(this, extension)
             result.callback?.invoke(newSymbol)
             return newSymbol
         }
 
-        val firBasedSymbol = if (callRefinementExtensions.size == 1) {
-            val extension = callRefinementExtensions[0]
+        val variants = callRefinementExtensions.mapNotNull { extension ->
             val result = extension.intercept(callInfo, this)
-
-            if (result != null) {
-                process(result, extension)
-            } else {
+            result?.let { it to extension }
+        }
+        val firBasedSymbol = when (variants.size) {
+            0 -> {
                 unwrapIntegerOperatorSymbolIfNeeded(callInfo)
             }
-        } else {
-            val variants = context.session.extensionService.callRefinementExtensions.mapNotNull { extension ->
-                val result = extension.intercept(callInfo, this)
-                result?.let { it to extension }
+            1 -> {
+                val (result, extension) = variants[0]
+                process(result, extension)
             }
-            when (variants.size) {
-                0 -> {
-                    unwrapIntegerOperatorSymbolIfNeeded(callInfo)
-                }
-                1 -> {
-                    val (result, extension) = variants[0]
-                    process(result, extension)
-                }
-                else -> {
-                    pluginAmbiguity =
-                        AmbiguousInterceptedSymbol(variants.map { it.second::class.qualifiedName ?: it.second.javaClass.name })
-                    unwrapIntegerOperatorSymbolIfNeeded(callInfo)
-                }
+            else -> {
+                pluginAmbiguity =
+                    AmbiguousInterceptedSymbol(variants.map { it.second::class.qualifiedName ?: it.second.javaClass.name })
+                unwrapIntegerOperatorSymbolIfNeeded(callInfo)
             }
         }
         return Pair(firBasedSymbol, pluginAmbiguity)

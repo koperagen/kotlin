@@ -37,6 +37,7 @@ abstract class FirExtensionRegistrar : FirExtensionRegistrarAdapter() {
             FirFunctionTypeKindExtension::class,
             @OptIn(FirExtensionApiInternals::class)
             FirMetadataSerializerPlugin::class,
+            @OptIn(FirExtensionApiInternals::class)
             FirFunctionCallRefinementExtension::class,
         )
 
@@ -117,6 +118,7 @@ abstract class FirExtensionRegistrar : FirExtensionRegistrarAdapter() {
             registerExtension(FirMetadataSerializerPlugin::class, this)
         }
 
+        @FirExtensionApiInternals
         @JvmName("plusFunctionCallRefinementExtension")
         operator fun (FirFunctionCallRefinementExtension.Factory).unaryPlus() {
             registerExtension(FirFunctionCallRefinementExtension::class, this)
@@ -190,6 +192,7 @@ abstract class FirExtensionRegistrar : FirExtensionRegistrarAdapter() {
             FirMetadataSerializerPlugin.Factory { this.invoke(it) }.unaryPlus()
         }
 
+        @FirExtensionApiInternals
         @JvmName("plusFunctionCallRefinementExtension")
         operator fun ((FirSession) -> FirFunctionCallRefinementExtension).unaryPlus() {
             FirFunctionCallRefinementExtension.Factory { this.invoke(it) }.unaryPlus()

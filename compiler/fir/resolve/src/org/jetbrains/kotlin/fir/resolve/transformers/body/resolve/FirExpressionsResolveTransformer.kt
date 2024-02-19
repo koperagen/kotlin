@@ -60,6 +60,7 @@ open class FirExpressionsResolveTransformer(transformer: FirAbstractBodyResolveT
 
     private val expressionResolutionExtensions = session.extensionService.expressionResolutionExtensions.takeIf { it.isNotEmpty() }
     private val assignAltererExtensions = session.extensionService.assignAltererExtensions.takeIf { it.isNotEmpty() }
+    @OptIn(FirExtensionApiInternals::class)
     private val callRefinementExtensions = session.extensionService.callRefinementExtensions.takeIf { it.isNotEmpty() }
 
     init {
@@ -465,11 +466,11 @@ open class FirExpressionsResolveTransformer(transformer: FirAbstractBodyResolveT
             if (!choosingOptionForAugmentedAssignment) {
                 dataFlowAnalyzer.exitFunctionCall(result, data.forceFullCompletion)
             }
-
+            @OptIn(FirExtensionApiInternals::class)
             if (callRefinementExtensions != null) {
                 val reference = result.calleeReference
                 if (reference is FirResolvedNamedReference) {
-                    val callData = reference.resolvedSymbol.fir.originalCallData
+                    val callData = reference.resolvedSymbol.fir.originalCallDataForPluginRefinedCall
                     if (callData != null) {
                         result = callData.extension.transform(result, callData.originalSymbol)
                     }

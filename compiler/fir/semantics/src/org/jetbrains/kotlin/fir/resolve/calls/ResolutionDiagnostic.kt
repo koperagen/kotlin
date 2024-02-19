@@ -165,4 +165,4 @@ class TypeVariableAsExplicitReceiver(
     val typeParameter: FirTypeParameter,
 ) : ResolutionDiagnostic(RESOLVED_WITH_ERROR)
 
-class AmbiguousInterceptedSymbol(val pluginNames: List<String>) : ResolutionDiagnostic(INAPPLICABLE)
+class AmbiguousInterceptedSymbol(val pluginNames: List<String>) : ResolutionDiagnostic(RESOLVED_WITH_ERROR)
