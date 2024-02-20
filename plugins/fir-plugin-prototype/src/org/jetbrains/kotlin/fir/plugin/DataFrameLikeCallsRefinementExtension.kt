@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.fir.expressions.builder.buildAnonymousFunctionExpres
 import org.jetbrains.kotlin.fir.expressions.builder.buildBlock
 import org.jetbrains.kotlin.fir.expressions.builder.buildFunctionCall
 import org.jetbrains.kotlin.fir.expressions.builder.buildLambdaArgumentExpression
+import org.jetbrains.kotlin.fir.extensions.FirExtensionApiInternals
 import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
 import org.jetbrains.kotlin.fir.extensions.FirFunctionCallRefinementExtension
 import org.jetbrains.kotlin.fir.moduleData
@@ -44,6 +45,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.Variance
 
+@OptIn(FirExtensionApiInternals::class)
 class DataFrameLikeCallsRefinementExtension(session: FirSession) : FirFunctionCallRefinementExtension(session) {
     companion object {
         val REFINE = ClassId(FqName.ROOT, Name.identifier("Refine"))

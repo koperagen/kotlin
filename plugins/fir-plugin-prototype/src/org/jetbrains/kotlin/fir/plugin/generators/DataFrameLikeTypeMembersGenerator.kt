@@ -5,32 +5,18 @@
 
 package org.jetbrains.kotlin.fir.plugin.generators
 
-import org.jetbrains.kotlin.descriptors.EffectiveVisibility
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.caches.FirCache
 import org.jetbrains.kotlin.fir.caches.createCache
 import org.jetbrains.kotlin.fir.caches.firCachesFactory
 import org.jetbrains.kotlin.fir.caches.getValue
-import org.jetbrains.kotlin.fir.containingClassForStaticMemberAttr
-import org.jetbrains.kotlin.fir.declarations.FirConstructor
-import org.jetbrains.kotlin.fir.declarations.FirDeclarationOrigin
 import org.jetbrains.kotlin.fir.declarations.FirProperty
-import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
-import org.jetbrains.kotlin.fir.declarations.builder.buildProperty
-import org.jetbrains.kotlin.fir.declarations.builder.buildPropertyAccessor
-import org.jetbrains.kotlin.fir.declarations.builder.buildReceiverParameter
-import org.jetbrains.kotlin.fir.declarations.impl.FirResolvedDeclarationStatusImpl
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
-import org.jetbrains.kotlin.fir.moduleData
-import org.jetbrains.kotlin.fir.plugin.CallShapeData
-import org.jetbrains.kotlin.fir.plugin.DataFrameLikeCallsRefinementExtension
-import org.jetbrains.kotlin.fir.plugin.callShapeData
+import org.jetbrains.kotlin.fir.plugin.*
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.*
-import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.impl.ConeClassLikeTypeImpl
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
@@ -65,7 +51,9 @@ class DataFrameLikeTypeMembersGenerator(session: FirSession) : FirDeclarationGen
 
 
     override fun generateConstructors(context: MemberGenerationContext): List<FirConstructorSymbol> {
-        val constructor = buildPrimaryConstructor(ConeClassLookupTagWithFixedSymbol(context.owner.classId, context.owner), context.owner.classId)
+        val constructor = createConstructor(context.owner, DataFrameLikeCallsRefinementExtension.Companion.KEY, isPrimary = true) {
+            visibility = Visibilities.Local
+        }
         return listOf(constructor.symbol)
     }
 
@@ -79,56 +67,26 @@ class DataFrameLikeTypeMembersGenerator(session: FirSession) : FirDeclarationGen
         scopeSymbol: FirClassSymbol<*>,
         propName: Name,
     ): FirProperty {
-        val firPropertySymbol = FirPropertySymbol(CallableId(scopeSymbol.classId, propName))
-        return buildProperty {
-            moduleData = session.moduleData
-            resolvePhase = FirResolvePhase.BODY_RESOLVE
-            origin = FirDeclarationOrigin.Plugin(DataFrameLikeCallsRefinementExtension.Companion.KEY)
-            status = FirResolvedDeclarationStatusImpl(
-                Visibilities.Local,
-                Modality.FINAL,
-                EffectiveVisibility.Local
-            )
-            receiverParameter = buildReceiverParameter {
-                typeRef = buildResolvedTypeRef {
-                    type = ConeClassLikeTypeImpl(
-                        ConeClassLikeLookupTagImpl(DataFrameLikeCallsRefinementExtension.DATAFRAME),
-                        arrayOf(
-                            ConeClassLikeTypeImpl(
-                                ConeClassLookupTagWithFixedSymbol(tokenSymbol.classId, tokenSymbol),
-                                emptyArray(),
-                                isNullable = false
-                            )
-                        ),
-                        isNullable = false
-                    )
-                }
-            }
-            dispatchReceiverType = ConeClassLikeTypeImpl(
-                ConeClassLookupTagWithFixedSymbol(scopeSymbol.classId, scopeSymbol),
-                emptyArray(),
-                isNullable = false
-            )
-            this.returnTypeRef = session.builtinTypes.intType
-            val firPropertyAccessorSymbol = FirPropertyAccessorSymbol()
-            getter = buildPropertyAccessor {
-                moduleData = session.moduleData
-                resolvePhase = FirResolvePhase.BODY_RESOLVE
-                origin = FirDeclarationOrigin.Plugin(DataFrameLikeCallsRefinementExtension.Companion.KEY)
-                this.returnTypeRef = session.builtinTypes.intType
-                symbol = firPropertyAccessorSymbol
-                propertySymbol = firPropertySymbol
-                isGetter = true
-                status = FirResolvedDeclarationStatusImpl(
-                    Visibilities.Local,
-                    Modality.FINAL,
-                    EffectiveVisibility.Local
+        return createMemberProperty(
+            scopeSymbol,
+            DataFrameLikeCallsRefinementExtension.Companion.KEY,
+            propName,
+            session.builtinTypes.intType.type
+        ) {
+            visibility = Visibilities.Local
+            extensionReceiverType {
+                ConeClassLikeTypeImpl(
+                    ConeClassLikeLookupTagImpl(DataFrameLikeCallsRefinementExtension.DATAFRAME),
+                    arrayOf(
+                        ConeClassLikeTypeImpl(
+                            ConeClassLookupTagWithFixedSymbol(tokenSymbol.classId, tokenSymbol),
+                            emptyArray(),
+                            isNullable = false
+                        )
+                    ),
+                    isNullable = false
                 )
-            }.also { firPropertyAccessorSymbol.bind(it) }
-            name = propName
-            symbol = firPropertySymbol
-            isVar = false
-            isLocal = false
+            }
         }
     }
 
@@ -136,41 +94,13 @@ class DataFrameLikeTypeMembersGenerator(session: FirSession) : FirDeclarationGen
         tokenSymbol: FirClassSymbol<*>,
         propName: Name,
     ): FirProperty {
-        val firPropertySymbol = FirPropertySymbol(CallableId(tokenSymbol.classId, propName))
-        return buildProperty {
-            moduleData = session.moduleData
-            resolvePhase = FirResolvePhase.BODY_RESOLVE
-            origin = FirDeclarationOrigin.Plugin(DataFrameLikeCallsRefinementExtension.Companion.KEY)
-            status = FirResolvedDeclarationStatusImpl(
-                Visibilities.Local,
-                Modality.FINAL,
-                EffectiveVisibility.Local
-            )
-            dispatchReceiverType = ConeClassLikeTypeImpl(
-                ConeClassLookupTagWithFixedSymbol(tokenSymbol.classId, tokenSymbol),
-                emptyArray(),
-                isNullable = false
-            )
-            this.returnTypeRef = session.builtinTypes.intType
-            val firPropertyAccessorSymbol = FirPropertyAccessorSymbol()
-            getter = buildPropertyAccessor {
-                moduleData = session.moduleData
-                resolvePhase = FirResolvePhase.BODY_RESOLVE
-                origin = FirDeclarationOrigin.Plugin(DataFrameLikeCallsRefinementExtension.Companion.KEY)
-                this.returnTypeRef = session.builtinTypes.intType
-                symbol = firPropertyAccessorSymbol
-                propertySymbol = firPropertySymbol
-                isGetter = true
-                status = FirResolvedDeclarationStatusImpl(
-                    Visibilities.Local,
-                    Modality.FINAL,
-                    EffectiveVisibility.Local
-                )
-            }.also { firPropertyAccessorSymbol.bind(it) }
-            name = propName
-            symbol = firPropertySymbol
-            isVar = false
-            isLocal = false
+        return createMemberProperty(
+            tokenSymbol,
+            DataFrameLikeCallsRefinementExtension.Companion.KEY,
+            propName,
+            session.builtinTypes.intType.type
+        ) {
+            visibility = Visibilities.Local
         }
     }
 
@@ -179,74 +109,17 @@ class DataFrameLikeTypeMembersGenerator(session: FirSession) : FirDeclarationGen
         scopeSymbol: FirRegularClassSymbol,
         name: Name
     ): FirProperty {
-        val firPropertySymbol = FirPropertySymbol(name)
-        return buildProperty {
-            moduleData = session.moduleData
-            resolvePhase = FirResolvePhase.BODY_RESOLVE
-            origin = FirDeclarationOrigin.Plugin(DataFrameLikeCallsRefinementExtension.Companion.KEY)
-            status = FirResolvedDeclarationStatusImpl(
-                Visibilities.Local,
-                Modality.FINAL,
-                EffectiveVisibility.Local
+        return createMemberProperty(
+            scopeSymbol,
+            DataFrameLikeCallsRefinementExtension.Companion.KEY,
+            name,
+            ConeClassLikeTypeImpl(
+                ConeClassLookupTagWithFixedSymbol(scope, scopeSymbol),
+                emptyArray(),
+                isNullable = false
             )
-            this.returnTypeRef = buildResolvedTypeRef {
-                type = ConeClassLikeTypeImpl(
-                    ConeClassLookupTagWithFixedSymbol(scope, scopeSymbol),
-                    emptyArray(),
-                    isNullable = false
-                )
-            }
-            val firPropertyAccessorSymbol = FirPropertyAccessorSymbol()
-            getter = buildPropertyAccessor {
-                moduleData = session.moduleData
-                resolvePhase = FirResolvePhase.BODY_RESOLVE
-                origin = FirDeclarationOrigin.Plugin(DataFrameLikeCallsRefinementExtension.Companion.KEY)
-                this.returnTypeRef = buildResolvedTypeRef {
-                    type = ConeClassLikeTypeImpl(
-                        ConeClassLookupTagWithFixedSymbol(scope, scopeSymbol),
-                        emptyArray(),
-                        isNullable = false
-                    )
-                }
-                symbol = firPropertyAccessorSymbol
-                propertySymbol = firPropertySymbol
-                isGetter = true
-                status = FirResolvedDeclarationStatusImpl(
-                    Visibilities.Local,
-                    Modality.FINAL,
-                    EffectiveVisibility.Local
-                )
-            }.also { firPropertyAccessorSymbol.bind(it) }
-            this.name = name
-            symbol = firPropertySymbol
-            isVar = false
-            isLocal = false
-        }
-    }
-
-    private fun buildPrimaryConstructor(
-        tokenLookupTag: ConeClassLookupTagWithFixedSymbol,
-        token: ClassId,
-    ): FirConstructor {
-        return org.jetbrains.kotlin.fir.declarations.builder.buildPrimaryConstructor {
-            resolvePhase = FirResolvePhase.BODY_RESOLVE
-            moduleData = session.moduleData
-            origin = FirDeclarationOrigin.Plugin(DataFrameLikeCallsRefinementExtension.Companion.KEY)
-            returnTypeRef = buildResolvedTypeRef {
-                type = ConeClassLikeTypeImpl(
-                    tokenLookupTag,
-                    emptyArray(),
-                    isNullable = false
-                )
-            }
-            status = FirResolvedDeclarationStatusImpl(
-                Visibilities.Local,
-                Modality.FINAL,
-                EffectiveVisibility.Local
-            )
-            symbol = FirConstructorSymbol(token)
-        }.also {
-            it.containingClassForStaticMemberAttr = tokenLookupTag
+        ) {
+            visibility = Visibilities.Local
         }
     }
 }
